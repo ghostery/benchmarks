@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store/
+
+# Ignore all files within a directory
+output/current/idle/**
+output/current/idleWithBrowser/**
+output/current/withGhostery/**
+output/current/withoutGhostery/**
+output/time/withGhostery/**
+output/time/withoutGhostery/**
+profiles/withGhostery/**
+profiles/withoutGhostery/**
+
+# Do not ignore a special file name
+!.gitkeep

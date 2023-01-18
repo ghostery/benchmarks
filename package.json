@@ -1,0 +1,22 @@
+{
+  "name": "@ghostery/benchmarks",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "currentToPower": "node src/currentToPower/index.js",
+    "readTime": "node src/readTimeLogs/index.js",
+    "test": "node --test test",
+    "lint": "eslint *.js"
+  },
+  "dependencies": {
+    "decompress": "^4.2.1",
+    "selenium-webdriver": "^4.7.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.33.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^4.2.1"
+  }
+}
