@@ -17,33 +17,61 @@ export const switchToWindowWithUrl = async (driver, url) => {
 };
 
 export const downloadAddon = async (url) => {
-  const hash = crypto.createHash('md5').update(url).digest('hex');
-  const tempPath = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ghostery-benchmarks'),
-  );
+  if (url.endsWith('zip')) {
+    console.log('LOG: ZIP file');
+    const hash = crypto.createHash('md5').update(url).digest('hex');
+    const tempPath = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'ghostery-benchmarks'),
+    );
 
-  console.log('LOG: Addon temp path:', tempPath);
+    console.log('LOG: Addon temp path:', tempPath);
 
-  const addonZipPath = path.join(tempPath, `${hash}.zip`);
+    const addonZipPath = path.join(tempPath, `${hash}.zip`);
 
-  if (!fs.existsSync(addonZipPath)) {
-    console.log('LOG: Downloading addon');
-    const res = await fetch(url);
-    const arrayBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    if (!fs.existsSync(addonZipPath)) {
+      console.log('LOG: Downloading addon');
+      const res = await fetch(url);
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
 
-    fs.writeFileSync(addonZipPath, buffer);
+      fs.writeFileSync(addonZipPath, buffer);
+    }
+
+    const addonPath = path.join(tempPath, hash);
+
+    if (!fs.existsSync(addonPath)) {
+      console.log('LOG: Unpacking addon');
+      await decompress(addonZipPath, addonPath);
+    }
+
+    console.log('LOG: Addon path:', addonPath);
+    return addonPath;
   }
+  if (url.endsWith('crx')) {
+    console.log('LOG: CRX file');
+    const hash = crypto.createHash('md5').update(url).digest('hex');
+    const tempPath = fs.mkdtempSync(
+      path.join(os.tmpdir(), 'ghostery-benchmarks'),
+    );
 
-  const addonPath = path.join(tempPath, hash);
+    console.log('LOG: Addon temp path:', tempPath);
 
-  if (!fs.existsSync(addonPath)) {
-    console.log('LOG: Unpacking addon');
-    await decompress(addonZipPath, addonPath);
+    const addonZipPath = path.join(tempPath, `${hash}.crx`);
+
+    if (!fs.existsSync(addonZipPath)) {
+      console.log('LOG: Downloading addon');
+      const res = await fetch(url);
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      fs.writeFileSync(addonZipPath, buffer);
+    }
+
+    const addonPath = path.join(tempPath, `${hash}.crx`);
+
+    console.log('LOG: Addon path:', addonPath);
+    return addonPath;
   }
-
-  console.log('LOG: Addon path:', addonPath);
-  return addonPath;
 };
 
 export const createFileList = (folderPath) => {

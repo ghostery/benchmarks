@@ -1,18 +1,27 @@
 import { Builder, Browser, By, until } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
+import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
-import { downloadAddon, sleep, switchToWindowWithUrl } from './helpers.js';
+import { downloadAddon, sleep, switchToWindowWithUrl } from './src/helpers.js';
 
 const timestamp = new Date().toISOString();
+const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
+const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
+const isChromeSelected = Boolean(
+  process.argv.find((arg) => arg === '--chrome'),
+);
 const isGhosteryEnabled = Boolean(
   process.argv.find((arg) => arg === '--with-ghostery'),
 );
-const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
-const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
 
 let region = 'GLOBAL';
 let outputPath = 'output/time';
 let n = 1;
+let selectedBrowser = 'Firefox';
+let options = '';
+let driver = '';
+let addon = '';
+let addonUUID = '';
 
 if (isRegionEU && isRegionUS) {
   throw new Error('Cannot use more than one region at the same time.');
@@ -27,29 +36,77 @@ const urls = fs
   .split(/\r?\n/)
   .map((l) => `${l}`);
 
-const addonUUID = 'd56a5b99-51b6-4e83-ab23-796216679614';
+if (isChromeSelected) {
+  addonUUID = 'agbomdmjjfglgplpnkahbcmblehajkag';
+} else {
+  addonUUID = 'd56a5b99-51b6-4e83-ab23-796216679614';
+}
 
-const options = new firefox.Options();
-options.setPreference(
-  'extensions.webextensions.uuids',
-  `{"firefox@ghostery.com": "${addonUUID}"}`,
-);
-// options.addArguments("--headless");
+if (isChromeSelected) {
+  selectedBrowser = 'Chrome';
+  console.log(`LOG: Selected browser: ${selectedBrowser}.`);
+  options = new chrome.Options();
+} else {
+  console.log(`LOG: Selected browser: ${selectedBrowser}.`);
+  options = new firefox.Options();
+  options.setPreference(
+    'extensions.webextensions.uuids',
+    `{"firefox@ghostery.com": "${addonUUID}"}`,
+  );
+  // options.addArguments("--headless");
+}
 
 if (isGhosteryEnabled) {
-  options.addArguments('-profile', 'profiles/withGhostery');
-  outputPath += '/withGhostery';
+  if (isChromeSelected) {
+    options.addArguments('-user-data-dir=/profiles/withGhostery/Chrome');
+    outputPath += '/withGhostery/Chrome';
+  } else {
+    options.addArguments('-profile', 'profiles/withGhostery/Firefox');
+    outputPath += '/withGhostery/Firefox';
+  }
 } else {
-  options.addArguments('-profile', 'profiles/withoutGhostery');
-  outputPath += '/withoutGhostery';
+  if (isChromeSelected) {
+    options.addArguments('-user-data-dir=/profiles/withoutGhostery/Chrome');
+    outputPath += '/withoutGhostery/Chrome';
+  } else {
+    options.addArguments('-profile', 'profiles/withoutGhostery/Firefox');
+    outputPath += '/withoutGhostery/Firefox';
+  }
+}
+
+if (isChromeSelected) {
+  if (isGhosteryEnabled) {
+    console.log('LOG: Installing addon for Chrome.');
+    addon = await downloadAddon(
+      'https://github.com/ghostery/ghostery-extension/releases/download/v8.9.15/ghostery-chrome-v8.9.15.crx',
+    );
+    driver = await new Builder()
+      .forBrowser(Browser.CHROME)
+      .setChromeOptions(options)
+      .setChromeOptions(options.addExtensions(addon))
+      .build();
+  } else {
+    driver = await new Builder()
+      .forBrowser(Browser.CHROME)
+      .setChromeOptions(options)
+      .build();
+  }
+} else {
+  driver = await new Builder()
+    .forBrowser(Browser.FIREFOX)
+    .setFirefoxOptions(options)
+    .build();
+  if (isGhosteryEnabled) {
+    console.log('LOG: Installing addon for Firefox.');
+    addon = await downloadAddon(
+      'https://github.com/ghostery/ghostery-extension/releases/download/v8.9.15/ghostery-firefox-v8.9.15.zip',
+    );
+
+    await driver.installAddon(addon, true);
+  }
 }
 
 const outputStream = fs.createWriteStream(`${outputPath}/${timestamp}.txt`);
-
-const driver = await new Builder()
-  .forBrowser(Browser.FIREFOX)
-  .setFirefoxOptions(options)
-  .build();
 
 driver.manage().setTimeouts({ pageLoad: 20000 });
 
@@ -77,13 +134,8 @@ const logPageLoadTime = async (n, url, now) => {
 
 try {
   if (isGhosteryEnabled) {
-    const addon = await downloadAddon(
-      'https://github.com/ghostery/ghostery-extension/releases/download/v8.9.15/ghostery-firefox-v8.9.15.zip',
-    );
-
-    await driver.installAddon(addon, true);
-
-    if (!fs.existsSync('profiles/withGhostery/onboarded')) {
+    //TODO Need to check for both browsers
+    if (!fs.existsSync(`rofiles/withGhostery/${selectedBrowser}/onboarded`)) {
       await driver.wait(
         async () => (await driver.getAllWindowHandles()).length === 2,
       );
@@ -125,7 +177,10 @@ try {
         .click();
       console.log('INFO: Never-Consent enabled for all pages.');
 
-      fs.writeFileSync('profiles/withGhostery/onboarded', '');
+      fs.writeFileSync(
+        `profiles/withGhostery/${selectedBrowser}/onboarded`,
+        '',
+      );
     }
   }
 
