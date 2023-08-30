@@ -58,11 +58,13 @@ let addon = '';
 
 if (isChromeSelected) {
   if (isGhosteryEnabled) {
-    options.addArguments('-profile-directory=Profile 1');
-    options.addArguments('-user-data-dir=profiles/withGhostery/Chrome');
-    outputPath += '/withGhostery/Chrome';
+    options.addArguments('-profile-directory=Default');
+    options.addArguments(
+      `-user-data-dir=profiles/withGhostery/${selectedBrowser}`,
+    );
+    outputPath += `/withGhostery/${selectedBrowser}`;
 
-    console.log('LOG: Installing addon for Chrome.');
+    console.log(`LOG: Installing addon for ${selectedBrowser}.`);
     addon = await downloadAddon(
       'https://github.com/ghostery/ghostery-extension/releases/download/v8.11.0/ghostery-chrome-v8.11.0.crx',
     );
@@ -73,9 +75,11 @@ if (isChromeSelected) {
       .setChromeOptions(options.addExtensions(addon))
       .build();
   } else {
-    options.addArguments('-profile-directory=Profile 1');
-    options.addArguments('-user-data-dir=profiles/withoutGhostery/Chrome');
-    outputPath += '/withoutGhostery/Chrome';
+    options.addArguments('-profile-directory=Default');
+    options.addArguments(
+      `-user-data-dir=profiles/withoutGhostery/${selectedBrowser}`,
+    );
+    outputPath += `/withoutGhostery/${selectedBrowser}`;
 
     driver = await new Builder()
       .forBrowser(Browser.CHROME)
@@ -83,24 +87,35 @@ if (isChromeSelected) {
       .build();
   }
 } else {
-  driver = await new Builder()
-    .forBrowser(Browser.FIREFOX)
-    .setFirefoxOptions(options)
-    .build();
-
   if (isGhosteryEnabled) {
-    options.addArguments('-profile', 'profiles/withGhostery/Firefox');
-    outputPath += '/withGhostery/Firefox';
+    options.addArguments(
+      '-profile',
+      `profiles/withGhostery/${selectedBrowser}`,
+    );
+    outputPath += `/withGhostery/${selectedBrowser}`;
 
-    console.log('LOG: Installing addon for Firefox.');
+    driver = await new Builder()
+      .forBrowser(Browser.FIREFOX)
+      .setFirefoxOptions(options)
+      .build();
+
+    console.log(`LOG: Installing addon for ${selectedBrowser}.`);
     addon = await downloadAddon(
       'https://github.com/ghostery/ghostery-extension/releases/download/v8.11.0/ghostery-firefox-v8.11.0.zip',
     );
 
     await driver.installAddon(addon, true);
   } else {
-    options.addArguments('-profile', 'profiles/withoutGhostery/Firefox');
-    outputPath += '/withoutGhostery/Firefox';
+    options.addArguments(
+      '-profile',
+      `profiles/withoutGhostery/${selectedBrowser}`,
+    );
+    outputPath += `/withoutGhostery/${selectedBrowser}`;
+
+    driver = await new Builder()
+      .forBrowser(Browser.FIREFOX)
+      .setFirefoxOptions(options)
+      .build();
   }
 }
 
