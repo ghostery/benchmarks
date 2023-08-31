@@ -58,9 +58,9 @@ let addon = '';
 
 if (isChromeSelected) {
   if (isGhosteryEnabled) {
-    options.addArguments('-profile-directory=Default');
+    options.addArguments('--profile-directory=Default');
     options.addArguments(
-      `-user-data-dir=profiles/withGhostery/${selectedBrowser}`,
+      `--user-data-dir=profiles/withGhostery/${selectedBrowser}`,
     );
     outputPath += `/withGhostery/${selectedBrowser}`;
 
@@ -75,9 +75,9 @@ if (isChromeSelected) {
       .setChromeOptions(options.addExtensions(addon))
       .build();
   } else {
-    options.addArguments('-profile-directory=Default');
+    options.addArguments('--profile-directory=Default');
     options.addArguments(
-      `-user-data-dir=profiles/withoutGhostery/${selectedBrowser}`,
+      `--user-data-dir=profiles/withoutGhostery/${selectedBrowser}`,
     );
     outputPath += `/withoutGhostery/${selectedBrowser}`;
 
