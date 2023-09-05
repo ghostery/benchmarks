@@ -4,8 +4,13 @@ import { createFileList } from '../helpers.js';
 
 let region = 'GLOBAL';
 
+const timestamp = new Date().toISOString();
+
 const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
 const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
+const isChromeSelected = Boolean(
+  process.argv.find((arg) => arg === '--chrome'),
+);
 
 if (isRegionEU && isRegionUS) {
   throw new Error('Cannot use more than one region at the same time.');
@@ -15,23 +20,41 @@ if (isRegionEU && isRegionUS) {
   region = 'EU';
 }
 
+let selectedBrowser = 'Firefox';
+if (isChromeSelected) {
+  selectedBrowser = 'Chrome';
+}
+
 const urls = fs
   .readFileSync(`input/${region}/urls.txt`, { encoding: 'utf8' })
   .split(/\r?\n/)
   .map((l) => `${l}`);
 
-const fileListWith = createFileList(`output/time/withGhostery`);
-const fileListWIthout = createFileList(`output/time/withoutGhostery`);
+const browserWithGhostery = `withGhostery/${selectedBrowser}`;
+const browserWithoutGhostery = `withGhostery/${selectedBrowser}`;
 
-console.log('With Ghostery');
-printResults(urls, fileListWith);
-console.log('Without Ghostery');
-printResults(urls, fileListWIthout);
+const fileListWith = createFileList(`output/time/${browserWithGhostery}`);
+const fileListWithout = createFileList(`output/time/${browserWithoutGhostery}`);
 
-function printResults(urls, fileList) {
+// console.log('With Ghostery');
+printResults(urls, fileListWith, `withGhostery`);
+// console.log('Without Ghostery');
+printResults(urls, fileListWithout, `withoutGhostery`);
+
+function printResults(urls, fileList, ghostery) {
   const stats = [];
   const loadTimes = [];
   const brokenUrls = [];
+
+  const avgsStream = fs.createWriteStream(
+    `output/timeCalculated/${ghostery}/${selectedBrowser}/AverageUrlsLoadTime_${timestamp}.json`,
+  );
+  const durationStream = fs.createWriteStream(
+    `output/timeCalculated/${ghostery}/${selectedBrowser}/UrlsLoadDuration_${timestamp}.json`,
+  );
+  const brokenStream = fs.createWriteStream(
+    `output/timeCalculated/${ghostery}/${selectedBrowser}/BrokenUrls${timestamp}.json`,
+  );
 
   for (const fileName of fileList) {
     const file = fs.readFileSync(fileName, { encoding: 'utf8' });
@@ -71,16 +94,24 @@ function printResults(urls, fileList) {
 
   for (const [url, loadTime] of Object.entries(avgs)) {
     if (!loadTime) {
-      brokenUrls.push({ url, loadTime });
+      brokenUrls.push(url);
     }
   }
 
-  console.log('Average urls load time:');
-  console.log(avgs);
+  // console.log('Average urls load time:');
+  // console.log(avgs);
 
-  console.log('Duration of urls load time for specific set of measurements:');
-  console.log(loadTimes);
+  // console.log('Duration of urls load time for specific set of measurements:');
+  // console.log(loadTimes);
 
-  console.log('Urls which are broken or not loaded:');
-  console.log(brokenUrls);
+  // console.log('Urls which are broken or not loaded:');
+  // console.log(brokenUrls);
+
+  console.log = avgsStream.write(JSON.stringify(avgs));
+  console.log = durationStream.write(JSON.stringify(loadTimes));
+  console.log = brokenStream.write(JSON.stringify(brokenUrls));
+
+  avgsStream.close();
+  durationStream.close();
+  brokenStream.close();
 }
