@@ -205,6 +205,15 @@ try {
     await sleep(1000 * 20);
   }
 
+  console.log('New tab is opening.');
+  await driver.executeScript('window.open()', '');
+  const handle = await driver.getAllWindowHandles();
+  await driver.switchTo().window(handle[0]);
+  await driver.close();
+
+  console.log(`Switch to ${handle}.`);
+  await driver.switchTo().window(handle[1]);
+
   for (const url of urls) {
     const now = new Date().toISOString();
     try {

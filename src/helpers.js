@@ -68,3 +68,14 @@ export const createFileList = (folderPath) => {
   }
   return paths;
 };
+
+export const createFileListToCompare = (folderPath) => {
+  const paths = '';
+
+  for (const file of fs.readdirSync(folderPath)) {
+    if (file.endsWith('.txt')) {
+      paths.concat(`${folderPath}/${file}`);
+    }
+  }
+  return paths;
+};

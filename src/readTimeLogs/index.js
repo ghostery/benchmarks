@@ -31,14 +31,14 @@ const urls = fs
   .map((l) => `${l}`);
 
 const browserWithGhostery = `withGhostery/${selectedBrowser}`;
-const browserWithoutGhostery = `withGhostery/${selectedBrowser}`;
+const browserWithoutGhostery = `withoutGhostery/${selectedBrowser}`;
 
 const fileListWith = createFileList(`output/time/${browserWithGhostery}`);
 const fileListWithout = createFileList(`output/time/${browserWithoutGhostery}`);
 
-// console.log('With Ghostery');
+console.log('With Ghostery');
 printResults(urls, fileListWith, `withGhostery`);
-// console.log('Without Ghostery');
+console.log('Without Ghostery');
 printResults(urls, fileListWithout, `withoutGhostery`);
 
 function printResults(urls, fileList, ghostery) {
@@ -46,15 +46,15 @@ function printResults(urls, fileList, ghostery) {
   const loadTimes = [];
   const brokenUrls = [];
 
-  const avgsStream = fs.createWriteStream(
-    `output/timeCalculated/${ghostery}/${selectedBrowser}/AverageUrlsLoadTime_${timestamp}.json`,
-  );
-  const durationStream = fs.createWriteStream(
-    `output/timeCalculated/${ghostery}/${selectedBrowser}/UrlsLoadDuration_${timestamp}.json`,
-  );
-  const brokenStream = fs.createWriteStream(
-    `output/timeCalculated/${ghostery}/${selectedBrowser}/BrokenUrls${timestamp}.json`,
-  );
+  // const avgsStream = fs.createWriteStream(
+  //   `output/timeCalculated/${ghostery}/${selectedBrowser}/AverageUrlsLoadTime_${timestamp}.json`,
+  // );
+  // const durationStream = fs.createWriteStream(
+  //   `output/timeCalculated/${ghostery}/${selectedBrowser}/UrlsLoadDuration_${timestamp}.json`,
+  // );
+  // const brokenStream = fs.createWriteStream(
+  //   `output/timeCalculated/${ghostery}/${selectedBrowser}/BrokenUrls${timestamp}.json`,
+  // );
 
   for (const fileName of fileList) {
     const file = fs.readFileSync(fileName, { encoding: 'utf8' });
@@ -84,6 +84,7 @@ function printResults(urls, fileList, ghostery) {
 
       stats.push({ url, loadTime });
     });
+
     loadTimes.push(
       `Set ${fileName
         .split('/')
@@ -98,8 +99,8 @@ function printResults(urls, fileList, ghostery) {
     }
   }
 
-  // console.log('Average urls load time:');
-  // console.log(avgs);
+  console.log('Average urls load time:');
+  console.log(avgs);
 
   // console.log('Duration of urls load time for specific set of measurements:');
   // console.log(loadTimes);
@@ -107,11 +108,11 @@ function printResults(urls, fileList, ghostery) {
   // console.log('Urls which are broken or not loaded:');
   // console.log(brokenUrls);
 
-  console.log = avgsStream.write(JSON.stringify(avgs));
-  console.log = durationStream.write(JSON.stringify(loadTimes));
-  console.log = brokenStream.write(JSON.stringify(brokenUrls));
+  // console.log = avgsStream.write(JSON.stringify(avgs));
+  // console.log = durationStream.write(JSON.stringify(loadTimes));
+  // console.log = brokenStream.write(JSON.stringify(brokenUrls));
 
-  avgsStream.close();
-  durationStream.close();
-  brokenStream.close();
+  // avgsStream.close();
+  // durationStream.close();
+  // brokenStream.close();
 }
