@@ -198,20 +198,17 @@ try {
     fs.writeFileSync(`profiles/withGhostery/${selectedBrowser}/onboarded`, '');
   }
 
-  console.log(`INFO: Open websites from for region: ${region}.`);
+  console.info(`INFO: Open websites from for region: ${region}.`);
 
   if (isGhosteryEnabled) {
     // Wait for Ghostery extension to download fresh Ad-blocking filters
     await sleep(1000 * 20);
   }
 
-  console.log('New tab is opening.');
   await driver.executeScript('window.open()', '');
   const handle = await driver.getAllWindowHandles();
   await driver.switchTo().window(handle[0]);
   await driver.close();
-
-  console.log(`Switch to ${handle}.`);
   await driver.switchTo().window(handle[1]);
 
   for (const url of urls) {
@@ -219,11 +216,17 @@ try {
     try {
       await driver.get(url);
       logPageLoadTime(n, url, now);
-
       await sleep(1000 * 2);
+
+      setTimeout(async () => {
+        const currentUrl = await driver.getCurrentUrl();
+        if (currentUrl === url) {
+          console.log(`INFO: URL ${url} is still visible after 25 seconds.`);
+        }
+      }, 25000);
     } catch (error) {
       console.error(`LOG=${JSON.stringify({ index: n, url })}`);
-      console.error(error);
+      // console.error(error);
     }
 
     n++;
