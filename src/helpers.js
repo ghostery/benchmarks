@@ -24,22 +24,34 @@ export const downloadAddon = async (url) => {
 
   console.log('LOG: Addon temp path:', tempPath);
 
-  const addonZipPath = path.join(tempPath, `${hash}.zip`);
+  let addonFilePath = path.join(tempPath, `${hash}.zip`);
+  let addonPath = path.join(tempPath, hash);
 
-  if (!fs.existsSync(addonZipPath)) {
+  if (url.endsWith('zip')) {
+    console.log('LOG: ZIP file');
+  }
+  if (url.endsWith('crx')) {
+    console.log('LOG: CRX file');
+
+    addonFilePath = path.join(tempPath, `${hash}.crx`);
+  }
+
+  if (!fs.existsSync(addonFilePath)) {
     console.log('LOG: Downloading addon');
     const res = await fetch(url);
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    fs.writeFileSync(addonZipPath, buffer);
+    fs.writeFileSync(addonFilePath, buffer);
   }
 
-  const addonPath = path.join(tempPath, hash);
-
-  if (!fs.existsSync(addonPath)) {
+  if (!fs.existsSync(addonPath) && url.endsWith('zip')) {
     console.log('LOG: Unpacking addon');
-    await decompress(addonZipPath, addonPath);
+    await decompress(addonFilePath, addonPath);
+  }
+
+  if (url.endsWith('crx')) {
+    addonPath = path.join(tempPath, `${hash}.crx`);
   }
 
   console.log('LOG: Addon path:', addonPath);
@@ -52,6 +64,17 @@ export const createFileList = (folderPath) => {
   for (const file of fs.readdirSync(folderPath)) {
     if (file.endsWith('.txt')) {
       paths.push(`${folderPath}/${file}`);
+    }
+  }
+  return paths;
+};
+
+export const createFileListToCompare = (folderPath) => {
+  const paths = '';
+
+  for (const file of fs.readdirSync(folderPath)) {
+    if (file.endsWith('.txt')) {
+      paths.concat(`${folderPath}/${file}`);
     }
   }
   return paths;
