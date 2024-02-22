@@ -1,5 +1,6 @@
 node_modules/
 .DS_Store/
+help.txt
 
 # Ignore all files within a directory
 output/current/idle/**

@@ -66,7 +66,7 @@ if (isChromeSelected) {
 
     console.log(`LOG: Installing addon for ${selectedBrowser}.`);
     addon = await downloadAddon(
-      'https://github.com/ghostery/ghostery-extension/releases/download/v8.11.0/ghostery-chrome-v8.11.0.crx',
+      'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
     );
 
     driver = await new Builder()
@@ -101,7 +101,7 @@ if (isChromeSelected) {
 
     console.log(`LOG: Installing addon for ${selectedBrowser}.`);
     addon = await downloadAddon(
-      'https://github.com/ghostery/ghostery-extension/releases/download/v8.11.0/ghostery-firefox-v8.11.0.zip',
+      'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip',
     );
 
     await driver.installAddon(addon, true);
@@ -128,13 +128,24 @@ console.log = function (msg) {
 };
 
 const logPageLoadTime = async (n, url, now) => {
-  const navigationStart = await driver.executeScript(
-    'return window.performance.timing.navigationStart',
-  );
-  const domComplete = await driver.executeScript(
-    'return window.performance.timing.domComplete',
-  );
-  const totalTime = domComplete - navigationStart;
+  let totalTime = 0;
+  try {
+    await driver.get(url);
+
+    const navigationStart = await driver.executeScript(
+      'return window.performance.timing.navigationStart',
+    );
+    const domComplete = await driver.executeScript(
+      'return window.performance.timing.domComplete',
+    );
+
+    totalTime = domComplete - navigationStart;
+    await sleep(1000 * 2);
+  } catch (error) {
+    console.error(`LOG=${JSON.stringify({ index: n, url })}`);
+    // console.error(error);
+  }
+
   console.log(
     `LOG=${JSON.stringify({
       index: n,
@@ -161,7 +172,7 @@ try {
 
       await switchToWindowWithUrl(
         driver,
-        `${extension}://${addonUUID}/app/templates/onboarding.html`,
+        `${extension}://${addonUUID}/pages/onboarding/index.html`,
       );
       await (
         await driver.wait(until.elementLocated(By.css('ui-button')))
@@ -172,9 +183,19 @@ try {
         ),
       );
       console.log('INFO: Ghostery onboarding completed.');
+
+      // if (isChromeSelected) {
+      //   await driver.get(`chrome://extensions/?id=${addonUUID}`);
+      //   await driver
+      //     .wait(until.elementLocated(By.ss('#pin-to-toolbar'))) //wrong one
+      //     .click();
+      //   console.log('INFO: Extension pinned.');
+      // }
+
       await driver.get(
-        `${extension}://${addonUUID}/app/templates/autoconsent.html`,
+        `${extension}://${addonUUID}/pages/autoconsent/index.html`,
       );
+
       await driver
         .wait(until.elementLocated(By.css('input[type=radio]:not(:checked)')))
         .click();
@@ -202,7 +223,7 @@ try {
 
   if (isGhosteryEnabled) {
     // Wait for Ghostery extension to download fresh Ad-blocking filters
-    await sleep(1000 * 20);
+    await sleep(1000 * 2);
   }
 
   await driver.executeScript('window.open()', '');
@@ -213,22 +234,7 @@ try {
 
   for (const url of urls) {
     const now = new Date().toISOString();
-    try {
-      await driver.get(url);
-      logPageLoadTime(n, url, now);
-      await sleep(1000 * 2);
-
-      setTimeout(async () => {
-        const currentUrl = await driver.getCurrentUrl();
-        if (currentUrl === url) {
-          console.log(`INFO: URL ${url} is still visible after 25 seconds.`);
-        }
-      }, 25000);
-    } catch (error) {
-      console.error(`LOG=${JSON.stringify({ index: n, url })}`);
-      // console.error(error);
-    }
-
+    await logPageLoadTime(n, url, now);
     n++;
   }
 } finally {
