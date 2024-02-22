@@ -69,10 +69,10 @@ if (isChromeSelected) {
       'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
     );
 
+    options.addArguments(`--load-extension=${addon}`);
     driver = await new Builder()
       .forBrowser(Browser.CHROME)
       .setChromeOptions(options)
-      .setChromeOptions(options.addExtensions(addon))
       .build();
   } else {
     options.addArguments('--profile-directory=Default');
@@ -160,6 +160,7 @@ try {
   if (isGhosteryEnabled) {
     if (!fs.existsSync(`profiles/withGhostery/${selectedBrowser}/onboarded`)) {
       let extension = 'moz-extension';
+      let chromeAddonUrl = '';
 
       await driver.wait(
         async () => (await driver.getAllWindowHandles()).length === 2,
@@ -168,6 +169,10 @@ try {
 
       if (isChromeSelected) {
         extension = 'chrome-extension';
+        let handles = await driver.getAllWindowHandles();
+        await driver.switchTo().window(handles[1]);
+        chromeAddonUrl = (await driver.getCurrentUrl()).split('/pages')[0];
+        // chromeAddonUrl = chromeAddonUrl.split('/pages')[0];
       }
 
       await switchToWindowWithUrl(
@@ -184,17 +189,16 @@ try {
       );
       console.log('INFO: Ghostery onboarding completed.');
 
-      // if (isChromeSelected) {
-      //   await driver.get(`chrome://extensions/?id=${addonUUID}`);
-      //   await driver
-      //     .wait(until.elementLocated(By.ss('#pin-to-toolbar'))) //wrong one
-      //     .click();
-      //   console.log('INFO: Extension pinned.');
-      // }
-
-      await driver.get(
-        `${extension}://${addonUUID}/pages/autoconsent/index.html`,
-      );
+      if (isChromeSelected) {
+        await sleep(1000 * 2);
+        await driver.get(
+          `${chromeAddonUrl}/pages/autoconsent/index.html?host=wired.com&default=`,
+        );
+      } else {
+        await driver.get(
+          `${extension}://${addonUUID}/pages/autoconsent/index.html`,
+        );
+      }
 
       await driver
         .wait(until.elementLocated(By.css('input[type=radio]:not(:checked)')))
@@ -223,7 +227,7 @@ try {
 
   if (isGhosteryEnabled) {
     // Wait for Ghostery extension to download fresh Ad-blocking filters
-    await sleep(1000 * 2);
+    await sleep(1000 * 20);
   }
 
   await driver.executeScript('window.open()', '');
