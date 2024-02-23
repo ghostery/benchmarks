@@ -3,6 +3,7 @@ import firefox from 'selenium-webdriver/firefox.js';
 import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
 import { downloadAddon, sleep, switchToWindowWithUrl } from './src/helpers.js';
+import { error } from 'console';
 
 const timestamp = new Date().toISOString();
 const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
@@ -10,12 +11,19 @@ const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
 const isChromeSelected = Boolean(
   process.argv.find((arg) => arg === '--chrome'),
 );
+const isFirefoxSelected = Boolean(
+  process.argv.find((arg) => arg === '--firefox'),
+);
 const isGhosteryEnabled = Boolean(
   process.argv.find((arg) => arg === '--with-ghostery'),
 );
 
 let region = 'GLOBAL';
 let n = 1;
+let chromeExtension =
+  'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip';
+let firefoxExtension =
+  'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip';
 
 if (isRegionEU && isRegionUS) {
   throw new Error('Cannot use more than one region at the same time.');
@@ -30,63 +38,53 @@ const urls = fs
   .split(/\r?\n/)
   .map((l) => `${l}`);
 
-let addonUUID = 'd56a5b99-51b6-4e83-ab23-796216679614';
-
-if (isChromeSelected) {
-  addonUUID = 'agbomdmjjfglgplpnkahbcmblehajkag';
+function whichBrowserIsSelected(isChromeSelected) {
+  return isChromeSelected
+    ? 'agbomdmjjfglgplpnkahbcmblehajkag'
+    : 'd56a5b99-51b6-4e83-ab23-796216679614';
 }
+let addonUUID = whichBrowserIsSelected(isChromeSelected);
 
-let options = new firefox.Options();
-let selectedBrowser = 'Firefox';
+let selectedBrowser = '';
+let options = ``;
+let outputPath = 'output/time';
+let driver = new Builder();
+let addon = '';
+let browserForDriver;
 
 if (isChromeSelected) {
   selectedBrowser = 'Chrome';
-  console.log(`LOG: Selected browser: ${selectedBrowser}.`);
   options = new chrome.Options();
-} else {
-  console.log(`LOG: Selected browser: ${selectedBrowser}.`);
-  options.setPreference(
-    'extensions.webextensions.uuids',
-    `{"firefox@ghostery.com": "${addonUUID}"}`,
-  );
-  // options.addArguments("--headless");
-}
-
-let outputPath = 'output/time';
-let driver = '';
-let addon = '';
-
-if (isChromeSelected) {
+  options.addArguments('--profile-directory=Default');
   if (isGhosteryEnabled) {
-    options.addArguments('--profile-directory=Default');
     options.addArguments(
       `--user-data-dir=profiles/withGhostery/${selectedBrowser}`,
     );
     outputPath += `/withGhostery/${selectedBrowser}`;
 
     console.log(`LOG: Installing addon for ${selectedBrowser}.`);
-    addon = await downloadAddon(
-      'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
-    );
+    addon = await downloadAddon(chromeExtension);
 
     options.addArguments(`--load-extension=${addon}`);
-    driver = await new Builder()
-      .forBrowser(Browser.CHROME)
-      .setChromeOptions(options)
-      .build();
   } else {
-    options.addArguments('--profile-directory=Default');
     options.addArguments(
       `--user-data-dir=profiles/withoutGhostery/${selectedBrowser}`,
     );
     outputPath += `/withoutGhostery/${selectedBrowser}`;
-
-    driver = await new Builder()
-      .forBrowser(Browser.CHROME)
-      .setChromeOptions(options)
-      .build();
   }
-} else {
+  browserForDriver = Browser.CHROME;
+  driver = await new Builder()
+    .forBrowser(browserForDriver)
+    .setChromeOptions(options)
+    .build();
+} else if (isFirefoxSelected) {
+  selectedBrowser = 'Firefox';
+  options = new firefox.Options();
+  options.setPreference(
+    'extensions.webextensions.uuids',
+    `{"firefox@ghostery.com": "${addonUUID}"}`,
+  );
+  // options.addArguments("--headless");
   if (isGhosteryEnabled) {
     options.addArguments(
       '-profile',
@@ -94,29 +92,27 @@ if (isChromeSelected) {
     );
     outputPath += `/withGhostery/${selectedBrowser}`;
 
-    driver = await new Builder()
-      .forBrowser(Browser.FIREFOX)
-      .setFirefoxOptions(options)
-      .build();
-
     console.log(`LOG: Installing addon for ${selectedBrowser}.`);
-    addon = await downloadAddon(
-      'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip',
-    );
-
-    await driver.installAddon(addon, true);
+    addon = await downloadAddon(firefoxExtension);
   } else {
     options.addArguments(
       '-profile',
       `profiles/withoutGhostery/${selectedBrowser}`,
     );
     outputPath += `/withoutGhostery/${selectedBrowser}`;
-
-    driver = await new Builder()
-      .forBrowser(Browser.FIREFOX)
-      .setFirefoxOptions(options)
-      .build();
   }
+  browserForDriver = Browser.FIREFOX;
+  driver = await new Builder()
+    .forBrowser(browserForDriver)
+    .setFirefoxOptions(options)
+    .build();
+} else {
+  error('No browser selected.');
+}
+console.log(`LOG: Selected browser: ${selectedBrowser}.`);
+
+if (isFirefoxSelected) {
+  await driver.installAddon(addon, true);
 }
 
 const outputStream = fs.createWriteStream(`${outputPath}/${timestamp}.txt`);
@@ -140,7 +136,6 @@ const logPageLoadTime = async (n, url, now) => {
     );
 
     totalTime = domComplete - navigationStart;
-    await sleep(1000 * 2);
   } catch (error) {
     console.error(`LOG=${JSON.stringify({ index: n, url })}`);
     // console.error(error);
@@ -190,7 +185,6 @@ try {
       console.log('INFO: Ghostery onboarding completed.');
 
       if (isChromeSelected) {
-        await sleep(1000 * 2);
         await driver.get(
           `${chromeAddonUrl}/pages/autoconsent/index.html?host=wired.com&default=`,
         );
