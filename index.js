@@ -126,6 +126,7 @@ console.log = function (msg) {
 const logPageLoadTime = async (n, url, now) => {
   let totalTime = 0;
   try {
+    const startTime = Date.now();
     await driver.get(url);
 
     const navigationStart = await driver.executeScript(
@@ -136,6 +137,15 @@ const logPageLoadTime = async (n, url, now) => {
     );
 
     totalTime = domComplete - navigationStart;
+
+    const endTime = Date.now();
+    const visibleTime = (endTime - startTime) / 1000; //
+
+    if (visibleTime < 60) {
+      console.error(
+        `INFO=${JSON.stringify({ index: n, url, totalTime, visibleTime })}`,
+      );
+    }
   } catch (error) {
     console.error(`LOG=${JSON.stringify({ index: n, url })}`);
     // console.error(error);
