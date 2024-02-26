@@ -8,10 +8,10 @@ const VOLTAGE = 230;
 const numberToFixedNumber = (number, digits) => Number(number.toFixed(digits));
 
 const paths = [
-  // ...createFileList('output/current/idle/Data measurement 1'),
-  // ...createFileList('output/current/idleWithBrowser/Data measurement 1'),
-  ...createFileList('output/current/withGhostery/Data measurement 2'),
-  ...createFileList('output/current/withoutGhostery/Data measurement 2'),
+  // ...createFileList('output/current/idle'),
+  // ...createFileList('output/current/idleWithBrowser'),
+  ...createFileList('output/current/withGhostery'),
+  ...createFileList('output/current/withoutGhostery'),
 ];
 
 paths.forEach((filePath, k) => {

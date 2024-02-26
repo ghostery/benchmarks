@@ -30,11 +30,6 @@ export const downloadAddon = async (url) => {
   if (url.endsWith('zip')) {
     console.log('LOG: ZIP file');
   }
-  if (url.endsWith('crx')) {
-    console.log('LOG: CRX file');
-
-    addonFilePath = path.join(tempPath, `${hash}.crx`);
-  }
 
   if (!fs.existsSync(addonFilePath)) {
     console.log('LOG: Downloading addon');
@@ -50,10 +45,6 @@ export const downloadAddon = async (url) => {
     await decompress(addonFilePath, addonPath);
   }
 
-  if (url.endsWith('crx')) {
-    addonPath = path.join(tempPath, `${hash}.crx`);
-  }
-
   console.log('LOG: Addon path:', addonPath);
   return addonPath;
 };
@@ -64,17 +55,6 @@ export const createFileList = (folderPath) => {
   for (const file of fs.readdirSync(folderPath)) {
     if (file.endsWith('.txt')) {
       paths.push(`${folderPath}/${file}`);
-    }
-  }
-  return paths;
-};
-
-export const createFileListToCompare = (folderPath) => {
-  const paths = '';
-
-  for (const file of fs.readdirSync(folderPath)) {
-    if (file.endsWith('.txt')) {
-      paths.concat(`${folderPath}/${file}`);
     }
   }
   return paths;
