@@ -20,17 +20,17 @@ const isGhosteryEnabled = Boolean(
 const config = isFirefoxSelected
   ? {
       browser: 'Firefox',
-      extensionScheme: 'moz-extension',
       addonUUID: 'd56a5b99-51b6-4e83-ab23-796216679614',
-      firefoxExtension:
+      extensionUrl:
         'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip',
+      addonBaseUrl: `moz-extension://d56a5b99-51b6-4e83-ab23-796216679614`,
     }
   : {
       browser: 'Chrome',
-      extensionScheme: 'chrome-extension',
-      addonUUID: '',
-      chromeExtension:
+      addonUUID: null,
+      extensionUrl:
         'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
+      addonBaseUrl: null, //get from runtime
     };
 
 let region = 'GLOBAL';
@@ -49,23 +49,19 @@ const urls = fs
   .split(/\r?\n/)
   .map((l) => `${l}`);
 
-let options = '';
 let outputPath = 'output/time';
-let driver = new Builder();
-let addon = '';
+let driver;
+const addon = await downloadAddon(config.extensionUrl);
 
 if (isChromeSelected) {
-  options = new chrome.Options();
+  const options = new chrome.Options();
   options.addArguments('--profile-directory=Default');
   if (isGhosteryEnabled) {
+    console.log(`LOG: Installing addon for ${config.browser}.`);
     options.addArguments(
       `--user-data-dir=profiles/withGhostery/${config.browser}`,
     );
     outputPath += `/withGhostery/${config.browser}`;
-
-    addon = await downloadAddon(config.chromeExtension);
-    console.log(`LOG: Installing addon for ${config.browser}.`);
-
     options.addArguments(`--load-extension=${addon}`);
   } else {
     options.addArguments(
@@ -78,7 +74,7 @@ if (isChromeSelected) {
     .setChromeOptions(options)
     .build();
 } else if (isFirefoxSelected) {
-  options = new firefox.Options();
+  const options = new firefox.Options();
   options.setPreference(
     'extensions.webextensions.uuids',
     `{"firefox@ghostery.com": "${config.addonUUID}"}`,
@@ -87,8 +83,6 @@ if (isChromeSelected) {
   if (isGhosteryEnabled) {
     options.addArguments('-profile', `profiles/withGhostery/${config.browser}`);
     outputPath += `/withGhostery/${config.browser}`;
-
-    addon = await downloadAddon(config.firefoxExtension);
   } else {
     options.addArguments(
       '-profile',
@@ -102,11 +96,12 @@ if (isChromeSelected) {
     .build();
 
   if (isGhosteryEnabled) {
-    await driver.installAddon(addon, true);
     console.log(`LOG: Installing addon for ${config.browser}.`);
+    await driver.installAddon(addon, true);
   }
 } else {
   console.error('No browser selected.');
+  process.exit(1);
 }
 console.log(`LOG: Selected browser: ${config.browser}.`);
 
@@ -158,8 +153,6 @@ const logPageLoadTime = async (n, url, now) => {
 try {
   if (isGhosteryEnabled) {
     if (!fs.existsSync(`profiles/withGhostery/${config.browser}/onboarded`)) {
-      let chromeAddonUrl = '';
-
       await driver.wait(
         async () => (await driver.getAllWindowHandles()).length === 2,
       );
@@ -168,12 +161,12 @@ try {
       if (isChromeSelected) {
         let handles = await driver.getAllWindowHandles();
         await driver.switchTo().window(handles[1]);
-        chromeAddonUrl = (await driver.getCurrentUrl()).split('/pages')[0];
+        config.addonBaseUrl = (await driver.getCurrentUrl()).split('/pages')[0];
       }
 
       await switchToWindowWithUrl(
         driver,
-        `${config.extensionScheme}://${config.addonUUID}/pages/onboarding/index.html`,
+        `${config.addonBaseUrl}/pages/onboarding/index.html`,
       );
       await (
         await driver.wait(until.elementLocated(By.css('ui-button')))
@@ -185,13 +178,7 @@ try {
       );
       console.info('INFO: Ghostery onboarding completed.');
 
-      if (isChromeSelected) {
-        await driver.get(`${chromeAddonUrl}/pages/autoconsent/index.html`);
-      } else {
-        await driver.get(
-          `${config.extensionScheme}://${config.addonUUID}/pages/autoconsent/index.html`,
-        );
-      }
+      await driver.get(`${config.addonBaseUrl}/pages/autoconsent/index.html`); //tutaj FF nie chce otworzyc
 
       await driver
         .wait(until.elementLocated(By.css('input[type=radio]:not(:checked)')))

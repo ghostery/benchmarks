@@ -4,8 +4,6 @@ import { createFileList } from '../helpers.js';
 
 let region = 'GLOBAL';
 
-const timestamp = new Date().toISOString();
-
 const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
 const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
 const isChromeSelected = Boolean(
