@@ -8,8 +8,8 @@ const VOLTAGE = 230;
 const numberToFixedNumber = (number, digits) => Number(number.toFixed(digits));
 
 const paths = [
-  // ...createFileList('output/current/idle'),
-  // ...createFileList('output/current/idleWithBrowser'),
+  ...createFileList('output/current/idle'),
+  ...createFileList('output/current/idleWithBrowser'),
   ...createFileList('output/current/withGhostery'),
   ...createFileList('output/current/withoutGhostery'),
 ];
