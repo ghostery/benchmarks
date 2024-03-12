@@ -131,7 +131,7 @@ const logPageLoadTime = async (n, url, now) => {
     const endTime = Date.now();
     const visibleTime = (endTime - startTime) / 1000;
 
-    if (visibleTime < 60) {
+    if (visibleTime > 60) {
       console.error(
         `INFO=${JSON.stringify({ index: n, url, totalTime, visibleTime })}`,
       );
@@ -178,7 +178,7 @@ try {
       );
       console.info('INFO: Ghostery onboarding completed.');
 
-      await driver.get(`${config.addonBaseUrl}/pages/autoconsent/index.html`); //tutaj FF nie chce otworzyc
+      await driver.get(`${config.addonBaseUrl}/pages/autoconsent/index.html`);
 
       await driver
         .wait(until.elementLocated(By.css('input[type=radio]:not(:checked)')))
@@ -220,6 +220,14 @@ try {
     const now = new Date().toISOString();
     await logPageLoadTime(n, url, now);
     n++;
+  }
+
+  if (
+    isChromeSelected &&
+    fs.existsSync(`profiles/withGhostery/${config.browser}/onboarded`)
+  ) {
+    fs.unlinkSync(`profiles/withGhostery/${config.browser}/onboarded`);
+    console.info('INFO: Onboarded file removed.');
   }
 } finally {
   await driver.quit();
