@@ -1,17 +1,39 @@
 import { Builder, Browser, By, until } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
+import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
-import { downloadAddon, sleep, switchToWindowWithUrl } from './helpers.js';
+import { downloadAddon, sleep, switchToWindowWithUrl } from './src/helpers.js';
 
 const timestamp = new Date().toISOString();
+const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
+const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
+const isChromeSelected = Boolean(
+  process.argv.find((arg) => arg === '--chrome'),
+);
+const isFirefoxSelected = Boolean(
+  process.argv.find((arg) => arg === '--firefox'),
+);
 const isGhosteryEnabled = Boolean(
   process.argv.find((arg) => arg === '--with-ghostery'),
 );
-const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
-const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
+
+const config = isFirefoxSelected
+  ? {
+      browser: 'Firefox',
+      addonUUID: 'd56a5b99-51b6-4e83-ab23-796216679614',
+      extensionUrl:
+        'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip',
+      addonBaseUrl: `moz-extension://d56a5b99-51b6-4e83-ab23-796216679614`,
+    }
+  : {
+      browser: 'Chrome',
+      addonUUID: null,
+      extensionUrl:
+        'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
+      addonBaseUrl: null, //get from runtime
+    };
 
 let region = 'GLOBAL';
-let outputPath = 'output/time';
 let n = 1;
 
 if (isRegionEU && isRegionUS) {
@@ -27,29 +49,63 @@ const urls = fs
   .split(/\r?\n/)
   .map((l) => `${l}`);
 
-const addonUUID = 'd56a5b99-51b6-4e83-ab23-796216679614';
+let outputPath = 'output/time';
+let driver;
+const addon = await downloadAddon(config.extensionUrl);
 
-const options = new firefox.Options();
-options.setPreference(
-  'extensions.webextensions.uuids',
-  `{"firefox@ghostery.com": "${addonUUID}"}`,
-);
-// options.addArguments("--headless");
+if (isChromeSelected) {
+  const options = new chrome.Options();
+  options.addArguments('--profile-directory=Default');
+  if (isGhosteryEnabled) {
+    console.log(`LOG: Installing addon for ${config.browser}.`);
+    options.addArguments(
+      `--user-data-dir=profiles/withGhostery/${config.browser}`,
+    );
+    outputPath += `/withGhostery/${config.browser}`;
+    options.addArguments(`--load-extension=${addon}`);
+  } else {
+    options.addArguments(
+      `--user-data-dir=profiles/withoutGhostery/${config.browser}`,
+    );
+    outputPath += `/withoutGhostery/${config.browser}`;
+  }
+  driver = await new Builder()
+    .forBrowser(Browser.CHROME)
+    .setChromeOptions(options)
+    .build();
+} else if (isFirefoxSelected) {
+  const options = new firefox.Options();
+  options.setPreference(
+    'extensions.webextensions.uuids',
+    `{"firefox@ghostery.com": "${config.addonUUID}"}`,
+  );
+  // options.addArguments("--headless");
+  if (isGhosteryEnabled) {
+    options.addArguments('-profile', `profiles/withGhostery/${config.browser}`);
+    outputPath += `/withGhostery/${config.browser}`;
+  } else {
+    options.addArguments(
+      '-profile',
+      `profiles/withoutGhostery/${config.browser}`,
+    );
+    outputPath += `/withoutGhostery/${config.browser}`;
+  }
+  driver = await new Builder()
+    .forBrowser(Browser.FIREFOX)
+    .setFirefoxOptions(options)
+    .build();
 
-if (isGhosteryEnabled) {
-  options.addArguments('-profile', 'profiles/withGhostery');
-  outputPath += '/withGhostery';
+  if (isGhosteryEnabled) {
+    console.log(`LOG: Installing addon for ${config.browser}.`);
+    await driver.installAddon(addon, true);
+  }
 } else {
-  options.addArguments('-profile', 'profiles/withoutGhostery');
-  outputPath += '/withoutGhostery';
+  console.error('No browser selected.');
+  process.exit(1);
 }
+console.log(`LOG: Selected browser: ${config.browser}.`);
 
 const outputStream = fs.createWriteStream(`${outputPath}/${timestamp}.txt`);
-
-const driver = await new Builder()
-  .forBrowser(Browser.FIREFOX)
-  .setFirefoxOptions(options)
-  .build();
 
 driver.manage().setTimeouts({ pageLoad: 20000 });
 
@@ -58,13 +114,32 @@ console.log = function (msg) {
 };
 
 const logPageLoadTime = async (n, url, now) => {
-  const navigationStart = await driver.executeScript(
-    'return window.performance.timing.navigationStart',
-  );
-  const domComplete = await driver.executeScript(
-    'return window.performance.timing.domComplete',
-  );
-  const totalTime = domComplete - navigationStart;
+  let totalTime = 0;
+  try {
+    const startTime = Date.now();
+    await driver.get(url);
+
+    const navigationStart = await driver.executeScript(
+      'return window.performance.timing.navigationStart',
+    );
+    const domComplete = await driver.executeScript(
+      'return window.performance.timing.domComplete',
+    );
+
+    totalTime = domComplete - navigationStart;
+
+    const endTime = Date.now();
+    const visibleTime = (endTime - startTime) / 1000;
+
+    if (visibleTime > 60) {
+      console.error(
+        `INFO=${JSON.stringify({ index: n, url, totalTime, visibleTime })}`,
+      );
+    }
+  } catch (error) {
+    console.error(`LOG=${JSON.stringify({ index: n, url })}`);
+  }
+
   console.log(
     `LOG=${JSON.stringify({
       index: n,
@@ -77,35 +152,34 @@ const logPageLoadTime = async (n, url, now) => {
 
 try {
   if (isGhosteryEnabled) {
-    const addon = await downloadAddon(
-      'https://github.com/ghostery/ghostery-extension/releases/download/v8.9.15/ghostery-firefox-v8.9.15.zip',
-    );
-
-    await driver.installAddon(addon, true);
-
-    if (!fs.existsSync('profiles/withGhostery/onboarded')) {
+    if (!fs.existsSync(`profiles/withGhostery/${config.browser}/onboarded`)) {
       await driver.wait(
         async () => (await driver.getAllWindowHandles()).length === 2,
       );
-      console.log('INFO: Ghostery onboarding opened.');
+      console.info('INFO: Ghostery onboarding opened.');
+
+      if (isChromeSelected) {
+        let handles = await driver.getAllWindowHandles();
+        await driver.switchTo().window(handles[1]);
+        config.addonBaseUrl = (await driver.getCurrentUrl()).split('/pages')[0];
+      }
 
       await switchToWindowWithUrl(
         driver,
-        `moz-extension://${addonUUID}/app/templates/onboarding.html`,
+        `${config.addonBaseUrl}/pages/onboarding/index.html`,
       );
       await (
-        await driver.wait(until.elementLocated(By.css('ui-button button')))
+        await driver.wait(until.elementLocated(By.css('ui-button')))
       ).click();
       await driver.wait(
         until.elementLocated(
           By.css('ui-onboarding-outro-success-view section'),
         ),
       );
-      console.log('INFO: Ghostery onboarding completed.');
+      console.info('INFO: Ghostery onboarding completed.');
 
-      await driver.get(
-        `moz-extension://${addonUUID}/app/templates/autoconsent.html`,
-      );
+      await driver.get(`${config.addonBaseUrl}/pages/autoconsent/index.html`);
+
       await driver
         .wait(until.elementLocated(By.css('input[type=radio]:not(:checked)')))
         .click();
@@ -123,32 +197,37 @@ try {
           ),
         )
         .click();
-      console.log('INFO: Never-Consent enabled for all pages.');
-
-      fs.writeFileSync('profiles/withGhostery/onboarded', '');
+      console.info('INFO: Never-Consent enabled for all pages.');
     }
+
+    fs.writeFileSync(`profiles/withGhostery/${config.browser}/onboarded`, '');
   }
 
-  console.log(`INFO: Open websites from for region: ${region}.`);
+  console.info(`INFO: Open websites from for region: ${region}.`);
 
   if (isGhosteryEnabled) {
     // Wait for Ghostery extension to download fresh Ad-blocking filters
     await sleep(1000 * 20);
   }
 
+  await driver.executeScript('window.open()', '');
+  const handle = await driver.getAllWindowHandles();
+  await driver.switchTo().window(handle[0]);
+  await driver.close();
+  await driver.switchTo().window(handle[1]);
+
   for (const url of urls) {
     const now = new Date().toISOString();
-    try {
-      await driver.get(url);
-      logPageLoadTime(n, url, now);
-
-      await sleep(1000 * 2);
-    } catch (error) {
-      console.error(`LOG=${JSON.stringify({ index: n, url })}`);
-      console.error(error);
-    }
-
+    await logPageLoadTime(n, url, now);
     n++;
+  }
+
+  if (
+    isChromeSelected &&
+    fs.existsSync(`profiles/withGhostery/${config.browser}/onboarded`)
+  ) {
+    fs.unlinkSync(`profiles/withGhostery/${config.browser}/onboarded`);
+    console.info('INFO: Onboarded file removed.');
   }
 } finally {
   await driver.quit();

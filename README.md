@@ -21,6 +21,8 @@ Usage:
 ```
 --US            site list for US region
 --EU            site list for European region
+--firefox       select Firefox browser
+--chrome        select Chrome browser
 --with-ghostery load Ghostery extension
 ```
 

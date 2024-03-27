@@ -24,22 +24,25 @@ export const downloadAddon = async (url) => {
 
   console.log('LOG: Addon temp path:', tempPath);
 
-  const addonZipPath = path.join(tempPath, `${hash}.zip`);
+  let addonFilePath = path.join(tempPath, `${hash}.zip`);
+  let addonPath = path.join(tempPath, hash);
 
-  if (!fs.existsSync(addonZipPath)) {
+  if (url.endsWith('zip')) {
+    console.log('LOG: ZIP file');
+  }
+
+  if (!fs.existsSync(addonFilePath)) {
     console.log('LOG: Downloading addon');
     const res = await fetch(url);
     const arrayBuffer = await res.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    fs.writeFileSync(addonZipPath, buffer);
+    fs.writeFileSync(addonFilePath, buffer);
   }
 
-  const addonPath = path.join(tempPath, hash);
-
-  if (!fs.existsSync(addonPath)) {
+  if (!fs.existsSync(addonPath) && url.endsWith('zip')) {
     console.log('LOG: Unpacking addon');
-    await decompress(addonZipPath, addonPath);
+    await decompress(addonFilePath, addonPath);
   }
 
   console.log('LOG: Addon path:', addonPath);
