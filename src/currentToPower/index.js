@@ -1,31 +1,29 @@
 import fs from 'fs';
 import path from 'path';
-import { createFileList } from '../helpers.js';
+import shell from 'shelljs';
 
 const output = [];
 const VOLTAGE = 230;
 
 const numberToFixedNumber = (number, digits) => Number(number.toFixed(digits));
 
-const paths = [
-  ...createFileList('output/current/idle'),
-  ...createFileList('output/current/idleWithBrowser'),
-  ...createFileList('output/current/withGhostery'),
-  ...createFileList('output/current/withoutGhostery'),
-];
+const directories = shell.ls('-d', 'output/current/*/');
 
-paths.forEach((filePath, k) => {
-  const measurments = fs
-    .readFileSync(filePath, { encoding: 'utf8' })
-    .split(/\r?\n/)
-    .map((l) => l.split('\t'))
-    .map((m) => [m[0], Number(m[1]) * VOLTAGE]);
+directories.forEach((dir) => {
+  const files = fs.readdirSync(dir);
+  files.forEach((file, k) => {
+    const filePath = path.join(dir, file);
+    const measurments = fs
+      .readFileSync(filePath, { encoding: 'utf8' })
+      .split(/\r?\n/)
+      .map((l) => l.split('\t'))
+      .map((m) => [m[0], Number(m[1]) * VOLTAGE]);
 
-  const powerAverage = powerByAverage(measurments);
-  const powerIntegral = powerByIntegral(measurments);
-  const duration = durationInMinutes(measurments);
+    const powerAverage = powerByAverage(measurments);
+    const powerIntegral = powerByIntegral(measurments);
+    const duration = durationInMinutes(measurments);
 
-  /*
+    /*
     AVG unit is a watts
     INTEGRAL unit is a watts
     AVG_CTP (current to power) unit is a watt-hour
@@ -33,14 +31,15 @@ paths.forEach((filePath, k) => {
     duration is in minutes
   */
 
-  output.push({
-    collectionOfCurrentSample: k + 1,
-    fileName: path.basename(filePath),
-    AVG: numberToFixedNumber(powerAverage, 3),
-    AVG_C2P: numberToFixedNumber(powerAverage * (duration / 60), 3),
-    INTEGRAL: numberToFixedNumber(powerIntegral, 3),
-    INTEGRAL_C2P: numberToFixedNumber(powerIntegral * (duration / 60), 3),
-    duration: numberToFixedNumber(duration, 3),
+    output.push({
+      collectionOfCurrentSample: k + 1,
+      fileName: path.basename(filePath),
+      AVG: numberToFixedNumber(powerAverage, 3),
+      AVG_C2P: numberToFixedNumber(powerAverage * (duration / 60), 3),
+      INTEGRAL: numberToFixedNumber(powerIntegral, 3),
+      INTEGRAL_C2P: numberToFixedNumber(powerIntegral * (duration / 60), 3),
+      duration: numberToFixedNumber(duration, 3),
+    });
   });
 });
 
