@@ -8,8 +8,10 @@ output/current/withGhostery/**
 output/current/withoutGhostery/**
 output/time/withGhostery/**
 output/time/withoutGhostery/**
+output/time/withUBlockOrigin/**
 profiles/withGhostery/**
 profiles/withoutGhostery/**
+profiles/withUBlockOrigin/**
 
 # Do not ignore a special file name
 !.gitkeep

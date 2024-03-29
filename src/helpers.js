@@ -16,20 +16,23 @@ export const switchToWindowWithUrl = async (driver, url) => {
   }
 };
 
-export const downloadAddon = async (url) => {
+export const downloadAddon = async (url, selectedExtension) => {
   const hash = crypto.createHash('md5').update(url).digest('hex');
   const tempPath = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ghostery-benchmarks'),
+    path.join(os.tmpdir(), 'extension-benchmarks'),
   );
 
   console.log('LOG: Addon temp path:', tempPath);
 
-  let addonFilePath = path.join(tempPath, `${hash}.zip`);
-  let addonPath = path.join(tempPath, hash);
-
+  let extension = selectedExtension.isUBlockOriginEnabled ? '.xpi' : '.zip';
   if (url.endsWith('zip')) {
     console.log('LOG: ZIP file');
+  } else if (url.endsWith('xpi')) {
+    console.log('LOG: XPI file');
   }
+
+  let addonFilePath = path.join(tempPath, `${hash}${extension}`);
+  let addonPath = path.join(tempPath, hash);
 
   if (!fs.existsSync(addonFilePath)) {
     console.log('LOG: Downloading addon');
@@ -40,7 +43,10 @@ export const downloadAddon = async (url) => {
     fs.writeFileSync(addonFilePath, buffer);
   }
 
-  if (!fs.existsSync(addonPath) && url.endsWith('zip')) {
+  if (
+    !fs.existsSync(addonPath) &&
+    (url.endsWith('zip') || url.endsWith('xpi'))
+  ) {
     console.log('LOG: Unpacking addon');
     await decompress(addonFilePath, addonPath);
   }

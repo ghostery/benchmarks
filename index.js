@@ -13,23 +13,46 @@ const isChromeSelected = Boolean(
 const isFirefoxSelected = Boolean(
   process.argv.find((arg) => arg === '--firefox'),
 );
-const isGhosteryEnabled = Boolean(
-  process.argv.find((arg) => arg === '--with-ghostery'),
-);
+let selectedExtension = {
+  isGhostery: Boolean(process.argv.find((arg) => arg === '--with-ghostery')),
+  isUBlockOrigin: Boolean(process.argv.find((arg) => arg === '--with-uBO')),
+};
+
+const extensionUrls = {
+  Firefox: {
+    Ghostery:
+      'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip',
+    UBlockOrigin:
+      'https://github.com/gorhill/uBlock/releases/download/1.56.0/uBlock0_1.56.0.firefox.signed.xpi',
+  },
+  Chrome: {
+    Ghostery:
+      'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
+    UBlockOrigin:
+      'https://github.com/gorhill/uBlock/releases/download/1.56.0/uBlock0_1.56.0.chromium.zip',
+  },
+};
+
+const browser = isFirefoxSelected ? 'Firefox' : 'Chrome';
+let extensionUrl;
+
+if (selectedExtension.isGhostery) {
+  extensionUrl = extensionUrls[browser]['Ghostery'];
+} else if (selectedExtension.isUBlockOrigin) {
+  extensionUrl = extensionUrls[browser]['UBlockOrigin'];
+}
 
 const config = isFirefoxSelected
   ? {
-      browser: 'Firefox',
+      browser: browser,
       addonUUID: 'd56a5b99-51b6-4e83-ab23-796216679614',
-      extensionUrl:
-        'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-firefox.zip',
+      extensionUrl: extensionUrl,
       addonBaseUrl: `moz-extension://d56a5b99-51b6-4e83-ab23-796216679614`,
     }
   : {
-      browser: 'Chrome',
+      browser: browser,
       addonUUID: null,
-      extensionUrl:
-        'https://github.com/ghostery/ghostery-extension/releases/download/v10.2.10/ghostery-chrome.zip',
+      extensionUrl: extensionUrl,
       addonBaseUrl: null, //get from runtime
     };
 
@@ -51,22 +74,33 @@ const urls = fs
 
 let outputPath = 'output/time';
 let driver;
-const addon = await downloadAddon(config.extensionUrl);
+const addon = await downloadAddon(config.extensionUrl, selectedExtension);
+
+let profileOutputPath = '';
+if (selectedExtension.isGhostery) {
+  profileOutputPath = `profiles/withGhostery/${config.browser}`;
+} else if (selectedExtension.isUBlockOrigin) {
+  profileOutputPath = `profiles/withUBlockOrigin/${config.browser}`;
+} else {
+  profileOutputPath = `profiles/withoutGhostery/${config.browser}`;
+}
 
 if (isChromeSelected) {
   const options = new chrome.Options();
   options.addArguments('--profile-directory=Default');
-  if (isGhosteryEnabled) {
+  if (selectedExtension.isGhostery) {
     console.log(`LOG: Installing addon for ${config.browser}.`);
-    options.addArguments(
-      `--user-data-dir=profiles/withGhostery/${config.browser}`,
-    );
+    options.addArguments(`--user-data-dir=${profileOutputPath}`);
     outputPath += `/withGhostery/${config.browser}`;
     options.addArguments(`--load-extension=${addon}`);
+  } else if (selectedExtension.isUBlockOrigin) {
+    console.log(`LOG: Installing addon for ${config.browser}.`);
+    options.addArguments(`--user-data-dir=${profileOutputPath}`);
+    outputPath += `/withUBlockOrigin/${config.browser}`;
+    options.addArguments(`--load-extension=${addon}/uBlock0.chromium`);
+    // options.addExtensions(addon);
   } else {
-    options.addArguments(
-      `--user-data-dir=profiles/withoutGhostery/${config.browser}`,
-    );
+    options.addArguments(`--user-data-dir=${profileOutputPath}`);
     outputPath += `/withoutGhostery/${config.browser}`;
   }
   driver = await new Builder()
@@ -80,8 +114,14 @@ if (isChromeSelected) {
     `{"firefox@ghostery.com": "${config.addonUUID}"}`,
   );
   // options.addArguments("--headless");
-  if (isGhosteryEnabled) {
+  if (selectedExtension.isGhostery) {
     options.addArguments('-profile', `profiles/withGhostery/${config.browser}`);
+    outputPath += `/withGhostery/${config.browser}`;
+  } else if (selectedExtension.isUBlockOrigin) {
+    options.addArguments(
+      '-profile',
+      `profiles/withUBlockOrigin/${config.browser}`,
+    );
     outputPath += `/withGhostery/${config.browser}`;
   } else {
     options.addArguments(
@@ -95,7 +135,7 @@ if (isChromeSelected) {
     .setFirefoxOptions(options)
     .build();
 
-  if (isGhosteryEnabled) {
+  if (selectedExtension.isGhostery || selectedExtension.isUBlockOrigin) {
     console.log(`LOG: Installing addon for ${config.browser}.`);
     await driver.installAddon(addon, true);
   }
@@ -151,7 +191,7 @@ const logPageLoadTime = async (n, url, now) => {
 };
 
 try {
-  if (isGhosteryEnabled) {
+  if (selectedExtension.isGhostery) {
     if (!fs.existsSync(`profiles/withGhostery/${config.browser}/onboarded`)) {
       await driver.wait(
         async () => (await driver.getAllWindowHandles()).length === 2,
@@ -201,14 +241,12 @@ try {
     }
 
     fs.writeFileSync(`profiles/withGhostery/${config.browser}/onboarded`, '');
-  }
 
-  console.info(`INFO: Open websites from for region: ${region}.`);
-
-  if (isGhosteryEnabled) {
     // Wait for Ghostery extension to download fresh Ad-blocking filters
     await sleep(1000 * 20);
   }
+
+  console.info(`INFO: Open websites from for region: ${region}.`);
 
   await driver.executeScript('window.open()', '');
   const handle = await driver.getAllWindowHandles();
