@@ -24,6 +24,7 @@ Usage:
 --firefox       select Firefox browser
 --chrome        select Chrome browser
 --with-ghostery load Ghostery extension
+--with-uBO      load uBlock Origin extension
 ```
 
 Example output:
