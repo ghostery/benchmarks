@@ -13,8 +13,11 @@ import {
 const timestamp = new Date().toISOString();
 const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
 const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
-const shouldDeleteFolders = Boolean(
-  process.argv.find((arg) => arg === '--delete-folders'),
+const deleteProfilesFolders = Boolean(
+  process.argv.find((arg) => arg === '--delete-profiles-folders'),
+);
+const deleteOutputsFolders = Boolean(
+  process.argv.find((arg) => arg === '--delete-output-folders'),
 );
 let selectedBrowser = {
   isChrome: Boolean(process.argv.find((arg) => arg === '--chrome')),
@@ -45,7 +48,12 @@ const directoriesProfiles = [
 
 createFolders(directoriesOutput);
 createFolders(directoriesProfiles);
-deleteFolders(directoriesProfiles, shouldDeleteFolders);
+if (deleteProfilesFolders) {
+  deleteFolders(directoriesProfiles);
+}
+if (deleteOutputsFolders) {
+  deleteFolders(directoriesOutput);
+}
 
 const extensionUrls = {
   Firefox: {

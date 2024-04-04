@@ -19,12 +19,14 @@ npm start
 Usage:
 
 ```
---US            site list for US region
---EU            site list for European region
---firefox       select Firefox browser
---chrome        select Chrome browser
---with-ghostery load Ghostery extension
---with-uBO      load uBlock Origin extension
+--US                       site list for US region
+--EU                       site list for European region
+--firefox                  select Firefox browser
+--chrome                   select Chrome browser
+--with-ghostery            load Ghostery extension
+--with-uBO                 load uBlock Origin extension
+--delete-profiles-folders  delete browser profile folders
+--delete-output-folders    delete output folders
 ```
 
 Example output:

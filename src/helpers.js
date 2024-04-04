@@ -82,15 +82,13 @@ export const createFolders = (directories) => {
   });
 };
 
-export const deleteFolders = (directories, shouldDeleteFolders) => {
-  if (shouldDeleteFolders) {
-    directories.forEach((dir) => {
-      if (shell.test('-d', dir)) {
-        shell.rm('-rf', dir);
-        console.log(`INFO: Directory '${dir}' - is deleted.`);
-      } else {
-        console.log(`INFO: Directory '${dir}' - does not exist.`);
-      }
-    });
-  }
+export const deleteFolders = (directories) => {
+  directories.forEach((dir) => {
+    if (shell.test('-d', dir)) {
+      shell.rm('-rf', dir);
+      console.log(`INFO: Directory '${dir}' - is deleted.`);
+    } else {
+      console.log(`INFO: Directory '${dir}' - does not exist.`);
+    }
+  });
 };
