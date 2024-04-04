@@ -17,6 +17,10 @@ export const switchToWindowWithUrl = async (driver, url) => {
 };
 
 export const downloadAddon = async (url, selectedExtension) => {
+  if (!url) {
+    console.error('INFO: No extension selected.');
+    return;
+  }
   const hash = crypto.createHash('md5').update(url).digest('hex');
   const tempPath = fs.mkdtempSync(
     path.join(os.tmpdir(), 'extension-benchmarks'),

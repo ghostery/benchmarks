@@ -80,7 +80,7 @@ if (selectedExtension.isGhostery) {
 } else if (selectedExtension.isUBlockOrigin) {
   profileOutputPath = `profiles/withUBlockOrigin/${config.browser}`;
 } else {
-  profileOutputPath = `profiles/withoutGhostery/${config.browser}`;
+  profileOutputPath = `profiles/withoutExtensions/${config.browser}`;
 }
 
 if (selectedBrowser.isChrome) {
@@ -98,7 +98,7 @@ if (selectedBrowser.isChrome) {
     options.addArguments(`--load-extension=${addon}/uBlock0.chromium`);
   } else {
     options.addArguments(`--user-data-dir=${profileOutputPath}`);
-    outputPath += `/withoutGhostery/${config.browser}`;
+    outputPath += `/withoutExtensions/${config.browser}`;
   }
   driver = await new Builder()
     .forBrowser(Browser.CHROME)
@@ -118,13 +118,13 @@ if (selectedBrowser.isChrome) {
       '-profile',
       `profiles/withUBlockOrigin/${config.browser}`,
     );
-    outputPath += `/withGhostery/${config.browser}`;
+    outputPath += `/withUBlockOrigin/${config.browser}`;
   } else {
     options.addArguments(
       '-profile',
-      `profiles/withoutGhostery/${config.browser}`,
+      `profiles/withoutExtensions/${config.browser}`,
     );
-    outputPath += `/withoutGhostery/${config.browser}`;
+    outputPath += `/withoutExtensions/${config.browser}`;
   }
   driver = await new Builder()
     .forBrowser(Browser.FIREFOX)
