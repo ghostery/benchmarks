@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import decompress from 'decompress';
+import shell from 'shelljs';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(() => r(), ms));
 
@@ -68,4 +69,28 @@ export const createFileList = (folderPath) => {
     }
   }
   return paths;
+};
+
+export const createFolders = (directories) => {
+  directories.forEach((dir) => {
+    if (!shell.test('-d', dir)) {
+      shell.mkdir('-p', dir);
+      console.log(`INFO: Directory '${dir}' - is created.`);
+    } else {
+      console.log(`INFO: Directory '${dir}' - already exists.`);
+    }
+  });
+};
+
+export const deleteFolders = (directories, shouldDeleteFolders) => {
+  if (shouldDeleteFolders) {
+    directories.forEach((dir) => {
+      if (shell.test('-d', dir)) {
+        shell.rm('-rf', dir);
+        console.log(`INFO: Directory '${dir}' - is deleted.`);
+      } else {
+        console.log(`INFO: Directory '${dir}' - does not exist.`);
+      }
+    });
+  }
 };

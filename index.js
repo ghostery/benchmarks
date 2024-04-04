@@ -2,11 +2,20 @@ import { Builder, Browser, By, until } from 'selenium-webdriver';
 import firefox from 'selenium-webdriver/firefox.js';
 import chrome from 'selenium-webdriver/chrome.js';
 import fs from 'fs';
-import { downloadAddon, sleep, switchToWindowWithUrl } from './src/helpers.js';
+import {
+  downloadAddon,
+  sleep,
+  switchToWindowWithUrl,
+  createFolders,
+  deleteFolders,
+} from './src/helpers.js';
 
 const timestamp = new Date().toISOString();
 const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
 const isRegionUS = Boolean(process.argv.find((arg) => arg === '--US'));
+const shouldDeleteFolders = Boolean(
+  process.argv.find((arg) => arg === '--delete-folders'),
+);
 let selectedBrowser = {
   isChrome: Boolean(process.argv.find((arg) => arg === '--chrome')),
   isFirefox: Boolean(process.argv.find((arg) => arg === '--firefox')),
@@ -15,6 +24,28 @@ let selectedExtension = {
   isGhostery: Boolean(process.argv.find((arg) => arg === '--with-ghostery')),
   isUBlockOrigin: Boolean(process.argv.find((arg) => arg === '--with-uBO')),
 };
+
+const directoriesOutput = [
+  './output/time/withGhostery/Firefox',
+  './output/time/withGhostery/Chrome',
+  './output/time/withUBlockOrigin/Firefox',
+  './output/time/withUBlockOrigin/Chrome',
+  './output/time/withoutExtensions/Firefox',
+  './output/time/withoutExtensions/Chrome',
+];
+
+const directoriesProfiles = [
+  './profiles/withGhostery/Firefox',
+  './profiles/withGhostery/Chrome',
+  './profiles/withUBlockOrigin/Firefox',
+  './profiles/withUBlockOrigin/Chrome',
+  './profiles/withoutExtensions/Firefox',
+  './profiles/withoutExtensions/Chrome',
+];
+
+createFolders(directoriesOutput);
+createFolders(directoriesProfiles);
+deleteFolders(directoriesProfiles, shouldDeleteFolders);
 
 const extensionUrls = {
   Firefox: {
