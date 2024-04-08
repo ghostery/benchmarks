@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Chart + Tables - Comparing Total Load Times</title>
+    <style>
+      table {
+        border-collapse: collapse;
+      }
+
+      th,
+      td {
+        border: 1px solid black;
+        padding: 5px;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+  </head>
+
+  <body>
+    <canvas id="compareTimes"></canvas>
+    <br />
+    <table id="ratioTable">
+      <thead>
+        <tr>
+          <th>Ratio</th>
+          <th>(%)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <br />
+    <table id="loadTimeTable">
+      <thead>
+        <tr>
+          <th>Folder Name</th>
+          <th>Total Load Time [sec]</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <script>
+      function createTableCell(textContent) {
+        const cell = document.createElement('td');
+        cell.textContent = textContent;
+        return cell;
+      }
+
+      function createTableRow(cells) {
+        const row = document.createElement('tr');
+        cells.forEach(cell => row.appendChild(cell));
+        return row;
+      }
+
+      function calculateRatio(
+        numeratorFolder,
+        denominatorFolder,
+        folderSumsByName) {
+          return folderSumsByName[numeratorFolder]
+          .totalLoadTime / folderSumsByName[denominatorFolder]
+          .totalLoadTime;
+      }
+
+      fetch('/data')
+        .then((response) => response.json())
+        .then((data) => {
+          const folderSums = Object.values(data.folderSums);
+          const loadTimeTableBody = document
+            .querySelector('#loadTimeTable tbody');
+          const folderNames = [
+            '/withGhostery/Firefox',
+            '/withGhostery/Chrome',
+            '/withUBlockOrigin/Firefox',
+            '/withUBlockOrigin/Chrome',
+            '/withoutExtensions/Firefox',
+            '/withoutExtensions/Chrome'
+          ];
+
+          const folderSumsByName = folderNames.reduce(
+            (acc, folderName) => {
+              acc[folderName] = folderSums.find((item) =>
+              item.folderName === folderName);
+              return acc;
+          }, {});
+
+          folderSums.forEach((folderSum) => {
+            const row = createTableRow([
+              createTableCell(folderSum.folderName),
+              createTableCell(folderSum.totalLoadTime.toFixed(2))
+            ]);
+            loadTimeTableBody.appendChild(row);
+          });
+
+          const ratios = {
+            '1. How much faster is Chrome without Ghostery than Firefox without Ghostery?':
+            calculateRatio(
+              '/withoutExtensions/Firefox',
+              '/withoutExtensions/Chrome',
+              folderSumsByName),
+
+            '2. How much faster is Chrome with Ghostery than Firefox with Ghostery?':
+            calculateRatio(
+              '/withGhostery/Firefox',
+              '/withGhostery/Chrome',
+              folderSumsByName),
+
+            '3. How much faster is Firefox with Ghostery than without Ghostery?':
+            calculateRatio(
+              '/withoutExtensions/Firefox',
+              '/withGhostery/Firefox',
+              folderSumsByName),
+
+            '4. How much faster is Chrome with Ghostery than without Ghostery?':
+            calculateRatio(
+              '/withoutExtensions/Chrome',
+              '/withGhostery/Chrome',
+              folderSumsByName),
+
+            '5. How much faster is Firefox with Ghostery than with uBlock Origin?':
+            calculateRatio(
+              '/withUBlockOrigin/Firefox',
+              '/withGhostery/Firefox',
+              folderSumsByName),
+
+            '6. How much faster is Chrome with Ghostery than with uBlock Origin?':
+            calculateRatio(
+              '/withUBlockOrigin/Chrome',
+              '/withGhostery/Chrome',
+              folderSumsByName),
+          };
+
+          const ratioTableBody = document.querySelector('#ratioTable tbody');
+          Object.entries(ratios).forEach(([ratio, value]) => {
+            const row = document.createElement('tr');
+            const ratioCell = document.createElement('td');
+            ratioCell.textContent = ratio;
+            const valueCell = document.createElement('td');
+            valueCell.textContent = (value * 100).toFixed(2) + '%';
+            row.appendChild(ratioCell);
+            row.appendChild(valueCell);
+            ratioTableBody.appendChild(row);
+          });
+
+          const labels = Object.keys(ratios);
+          const loadTimes = Object.values(ratios).map((ratio) => ratio * 100);
+
+          const ctx = document
+            .getElementById('compareTimes')
+            .getContext('2d');
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: labels,
+              datasets: [
+                {
+                  label: 'Total Load Time Ratio (%)',
+                  data: loadTimes,
+                  backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                  borderColor: 'rgba(75, 192, 192, 1)',
+                  borderWidth: 1,
+                },
+              ],
+            },
+            options: {
+              indexAxis: 'y',
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  title: {
+                    display: true,
+                    text: '',
+                  },
+                },
+              },
+            },
+          });
+        });
+    </script>
+  </body>
+</html>
