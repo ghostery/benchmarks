@@ -68,23 +68,11 @@ app.get('/data', async (req, res) => {
 
     const result = Object.values(groupedByURLAndFolder).map(
       ({ url, folderName, loadTimes }) => {
-        const averageLoadTime =
-          loadTimes.reduce((sum, loadTime) => sum + loadTime, 0) /
-          loadTimes.length;
-        return { url, folderName, loadTimes, averageLoadTime };
+        return { url, folderName, loadTimes };
       },
     );
 
-    const folderSums = result.reduce((acc, { folderName, averageLoadTime }) => {
-      if (!acc[folderName]) {
-        acc[folderName] = { folderName, totalLoadTime: 0 };
-      }
-      acc[folderName].totalLoadTime += averageLoadTime;
-      return acc;
-    }, {});
-
-    res.json({ result, folderSums });
-    // console.log({ result, folderSums });
+    res.json(result);
   } catch (err) {
     console.error('Error:', err);
     res.status(500).send('Error');

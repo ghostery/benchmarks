@@ -49,85 +49,113 @@
 
       function createTableRow(cells) {
         const row = document.createElement('tr');
-        cells.forEach(cell => row.appendChild(cell));
+        cells.forEach((cell) => row.appendChild(cell));
         return row;
       }
 
       function calculateRatio(
         numeratorFolder,
         denominatorFolder,
-        folderSumsByName) {
-          return folderSumsByName[numeratorFolder]
-          .totalLoadTime / folderSumsByName[denominatorFolder]
-          .totalLoadTime;
+        folderSumsByName,
+      ) {
+        return (
+          folderSumsByName[numeratorFolder].totalLoadTime /
+          folderSumsByName[denominatorFolder].totalLoadTime
+        );
+      }
+
+      function calculateFolderSums(data) {
+        const folderSums = data.reduce((acc, { folderName, loadTimes }) => {
+          if (!acc[folderName]) {
+            acc[folderName] = { folderName, totalLoadTime: 0, count: 0 };
+          }
+          acc[folderName].totalLoadTime += loadTimes.reduce((a, b) => a + b, 0);
+          acc[folderName].count += loadTimes.length;
+          return acc;
+        }, {});
+
+        for (let key in folderSums) {
+          folderSums[key].averageLoadTime =
+            folderSums[key].totalLoadTime / folderSums[key].count;
+        }
+
+        return folderSums;
       }
 
       fetch('/data')
         .then((response) => response.json())
         .then((data) => {
-          const folderSums = Object.values(data.folderSums);
-          const loadTimeTableBody = document
-            .querySelector('#loadTimeTable tbody');
+          const folderSums = calculateFolderSums(data);
+          const folderSumsArray = Object.values(folderSums);
+          const loadTimeTableBody = document.querySelector(
+            '#loadTimeTable tbody',
+          );
           const folderNames = [
             '/withGhostery/Firefox',
             '/withGhostery/Chrome',
             '/withUBlockOrigin/Firefox',
             '/withUBlockOrigin/Chrome',
             '/withoutExtensions/Firefox',
-            '/withoutExtensions/Chrome'
+            '/withoutExtensions/Chrome',
           ];
 
-          const folderSumsByName = folderNames.reduce(
-            (acc, folderName) => {
-              acc[folderName] = folderSums.find((item) =>
-              item.folderName === folderName);
-              return acc;
+          const folderSumsByName = folderNames.reduce((acc, folderName) => {
+            acc[folderName] = folderSumsArray.find(
+              (item) => item.folderName === folderName,
+            );
+            return acc;
           }, {});
 
-          folderSums.forEach((folderSum) => {
+          folderSumsArray.forEach((folderSum) => {
             const row = createTableRow([
               createTableCell(folderSum.folderName),
-              createTableCell(folderSum.totalLoadTime.toFixed(2))
+              createTableCell(folderSum.totalLoadTime.toFixed(2)),
             ]);
             loadTimeTableBody.appendChild(row);
           });
 
           const ratios = {
             '1. How much faster is Chrome without Ghostery than Firefox without Ghostery?':
-            calculateRatio(
-              '/withoutExtensions/Firefox',
-              '/withoutExtensions/Chrome',
-              folderSumsByName),
+              calculateRatio(
+                '/withoutExtensions/Firefox',
+                '/withoutExtensions/Chrome',
+                folderSumsByName,
+              ),
 
             '2. How much faster is Chrome with Ghostery than Firefox with Ghostery?':
-            calculateRatio(
-              '/withGhostery/Firefox',
-              '/withGhostery/Chrome',
-              folderSumsByName),
+              calculateRatio(
+                '/withGhostery/Firefox',
+                '/withGhostery/Chrome',
+                folderSumsByName,
+              ),
 
             '3. How much faster is Firefox with Ghostery than without Ghostery?':
-            calculateRatio(
-              '/withoutExtensions/Firefox',
-              '/withGhostery/Firefox',
-              folderSumsByName),
+              calculateRatio(
+                '/withoutExtensions/Firefox',
+                '/withGhostery/Firefox',
+                folderSumsByName,
+              ),
 
             '4. How much faster is Chrome with Ghostery than without Ghostery?':
-            calculateRatio(
-              '/withoutExtensions/Chrome',
-              '/withGhostery/Chrome',
-              folderSumsByName),
+              calculateRatio(
+                '/withoutExtensions/Chrome',
+                '/withGhostery/Chrome',
+                folderSumsByName,
+              ),
 
             '5. How much faster is Firefox with Ghostery than with uBlock Origin?':
-            calculateRatio(
-              '/withUBlockOrigin/Firefox',
-              '/withGhostery/Firefox',
-              folderSumsByName),
+              calculateRatio(
+                '/withUBlockOrigin/Firefox',
+                '/withGhostery/Firefox',
+                folderSumsByName,
+              ),
 
             '6. How much faster is Chrome with Ghostery than with uBlock Origin?':
-            calculateRatio(
-              '/withUBlockOrigin/Chrome',
-              '/withGhostery/Chrome',
-              folderSumsByName),
+              calculateRatio(
+                '/withUBlockOrigin/Chrome',
+                '/withGhostery/Chrome',
+                folderSumsByName,
+              ),
           };
 
           const ratioTableBody = document.querySelector('#ratioTable tbody');
@@ -145,9 +173,7 @@
           const labels = Object.keys(ratios);
           const loadTimes = Object.values(ratios).map((ratio) => ratio * 100);
 
-          const ctx = document
-            .getElementById('compareTimes')
-            .getContext('2d');
+          const ctx = document.getElementById('compareTimes').getContext('2d');
           new Chart(ctx, {
             type: 'bar',
             data: {
