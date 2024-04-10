@@ -9,6 +9,7 @@ import {
   createFolders,
   deleteFolders,
 } from './src/helpers.js';
+import { directoriesOutput, directoriesProfiles } from './src/directories.js';
 
 const timestamp = new Date().toISOString();
 const isRegionEU = Boolean(process.argv.find((arg) => arg === '--EU'));
@@ -28,32 +29,14 @@ let selectedExtension = {
   isUBlockOrigin: Boolean(process.argv.find((arg) => arg === '--with-uBO')),
 };
 
-const directoriesOutput = [
-  './output/time/withGhostery/Firefox',
-  './output/time/withGhostery/Chrome',
-  './output/time/withUBlockOrigin/Firefox',
-  './output/time/withUBlockOrigin/Chrome',
-  './output/time/withoutExtensions/Firefox',
-  './output/time/withoutExtensions/Chrome',
-];
-
-const directoriesProfiles = [
-  './profiles/withGhostery/Firefox',
-  './profiles/withGhostery/Chrome',
-  './profiles/withUBlockOrigin/Firefox',
-  './profiles/withUBlockOrigin/Chrome',
-  './profiles/withoutExtensions/Firefox',
-  './profiles/withoutExtensions/Chrome',
-];
-
-createFolders(directoriesOutput);
-createFolders(directoriesProfiles);
 if (deleteProfilesFolders) {
   deleteFolders(directoriesProfiles);
 }
 if (deleteOutputsFolders) {
   deleteFolders(directoriesOutput);
 }
+createFolders(directoriesOutput);
+createFolders(directoriesProfiles);
 
 const extensionUrls = {
   Firefox: {
