@@ -30,6 +30,7 @@ Usage:
 ```
 
 Example output:
+
 ```
 LOG: Addon temp path:
 LOG: Downloading addon
@@ -43,10 +44,43 @@ LOG={"index":360,"url":"https://www.virgilio.it/","loadTime":1433,"loadedAt":"20
 
 ```
 
+## How to show the results?
+
+The results are shown in the form of a graph and two tables.
+
+The graph shows the ratio of average pages opening time for the scenarios indicated.
+The first table contains the results of the web pages load time measurements for different browser configurations and installed extensions.
+The second table shows the total time taken to load web pages for different browser configurations and installed extensions, expressed in seconds.
+
+These scenarios are:
+
+1. How much faster is Chrome without Ghostery than Firefox without Ghostery?
+2. How much faster is Chrome with Ghostery than Firefox with Ghostery?
+3. How much faster is Firefox with Ghostery than without Ghostery?
+4. How much faster is Chrome with Ghostery than without Ghostery?
+5. How much faster is Firefox with Ghostery than with uBlock Origin?
+6. How much faster is Chrome with Ghostery than with uBlock Origin?
+
+Firstly, download the output/timing measurements. Secondly, a simple server needs to be started. The script will load these measurements and calculate the average page opening time and calculate the total page loading time. To run the server:
+
+```
+node www/server.js
+```
+
+In any browser, open the following address:
+http://localhost:3000/index.html
+
+Example output:
+
+```
+
+![Compare load times](compareLoadTimeGraphTwoTables.png)
+
+```
+
 ## Convert the current to power based on the measurements taken from the benchmark
 
 To measure AC current, Gravity Analog AC Current Sensor was used. All the code to gather current value is available on https://wiki.dfrobot.com/Gravity_Analog_AC_Current_Sensor__SKU_SEN0211_
-
 
 Start calculate
 
@@ -54,8 +88,8 @@ Start calculate
 npm run -- currentToPower
 ```
 
-
 Example input:
+
 ```
 10:11:50.121	0.091
 10:11:50.121	0.112
@@ -66,8 +100,8 @@ Example input:
 10:11:50.152	0.095
 ```
 
-
 Example output:
+
 ```
 [
   {
@@ -100,9 +134,6 @@ Example output:
 ]
 ```
 
-
-
-
 ## Based on the collected data from the benchmark, calculate the average time to load URLs
 
 Start read time
@@ -119,6 +150,7 @@ Usage:
 ```
 
 Example output:
+
 ```
 With Ghostery
 Average urls load time:
