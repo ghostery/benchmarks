@@ -72,11 +72,8 @@ http://localhost:3000/index.html
 
 Example output:
 
-```
-
 ![Compare load times](compareLoadTimeGraphTwoTables.png)
 
-```
 
 ## Convert the current to power based on the measurements taken from the benchmark
 
