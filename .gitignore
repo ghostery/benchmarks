@@ -13,5 +13,3 @@ profiles/withGhostery/**
 profiles/withoutExtensions/**
 profiles/withUBlockOrigin/**
 
-# Do not ignore a special file name
-!.gitkeep

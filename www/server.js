@@ -35,9 +35,6 @@ app.get('/data', async (req, res) => {
             const files = await fs.readdir(subfolderPath);
             return Promise.all(
               files.map(async (file) => {
-                if (file === '.gitkeep') {
-                  return;
-                }
                 const filePath = path.join(subfolderPath, file);
                 const fileStats = await fs.stat(filePath);
                 if (fileStats.isFile()) {
