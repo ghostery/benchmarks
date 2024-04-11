@@ -41,6 +41,15 @@
     </table>
 
     <script>
+      const folderNames = [
+        '/withGhostery/Firefox',
+        '/withGhostery/Chrome',
+        '/withUBlockOrigin/Firefox',
+        '/withUBlockOrigin/Chrome',
+        '/withoutExtensions/Firefox',
+        '/withoutExtensions/Chrome',
+      ];
+
       function createTableCell(textContent) {
         const cell = document.createElement('td');
         cell.textContent = textContent;
@@ -85,28 +94,19 @@
       fetch('/data')
         .then((response) => response.json())
         .then((data) => {
-          const folderSums = calculateFolderSums(data);
-          const folderSumsArray = Object.values(folderSums);
+          const folderSums = Object.values(calculateFolderSums(data));
           const loadTimeTableBody = document.querySelector(
             '#loadTimeTable tbody',
           );
-          const folderNames = [
-            '/withGhostery/Firefox',
-            '/withGhostery/Chrome',
-            '/withUBlockOrigin/Firefox',
-            '/withUBlockOrigin/Chrome',
-            '/withoutExtensions/Firefox',
-            '/withoutExtensions/Chrome',
-          ];
 
           const folderSumsByName = folderNames.reduce((acc, folderName) => {
-            acc[folderName] = folderSumsArray.find(
+            acc[folderName] = folderSums.find(
               (item) => item.folderName === folderName,
             );
             return acc;
           }, {});
 
-          folderSumsArray.forEach((folderSum) => {
+          folderSums.forEach((folderSum) => {
             const row = createTableRow([
               createTableCell(folderSum.folderName),
               createTableCell(folderSum.totalLoadTime.toFixed(2)),

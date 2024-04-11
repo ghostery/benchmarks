@@ -25,8 +25,8 @@ Usage:
 --chrome                   select Chrome browser
 --with-ghostery            load Ghostery extension
 --with-uBO                 load uBlock Origin extension
---delete-profiles-folders  delete browser profile folders
---delete-output-folders    delete output folders
+--delete-profiles-folders  delete browser profile folders to make a clear run
+--delete-output-folders    delete output folders to make a clear run
 ```
 
 Example output:
@@ -73,7 +73,6 @@ http://localhost:3000/index.html
 Example output:
 
 ![Compare load times](compareLoadTimeGraphTwoTables.png)
-
 
 ## Convert the current to power based on the measurements taken from the benchmark
 
