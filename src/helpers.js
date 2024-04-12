@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
 import decompress from 'decompress';
+import shell from 'shelljs';
 
 export const sleep = (ms) => new Promise((r) => setTimeout(() => r(), ms));
 
@@ -16,20 +17,27 @@ export const switchToWindowWithUrl = async (driver, url) => {
   }
 };
 
-export const downloadAddon = async (url) => {
+export const downloadAddon = async (url, selectedExtension) => {
+  if (!url) {
+    console.error('INFO: No extension selected.');
+    return;
+  }
   const hash = crypto.createHash('md5').update(url).digest('hex');
   const tempPath = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'ghostery-benchmarks'),
+    path.join(os.tmpdir(), 'extension-benchmarks'),
   );
 
   console.log('LOG: Addon temp path:', tempPath);
 
-  let addonFilePath = path.join(tempPath, `${hash}.zip`);
-  let addonPath = path.join(tempPath, hash);
-
+  let extension = selectedExtension.isUBlockOriginEnabled ? '.xpi' : '.zip';
   if (url.endsWith('zip')) {
     console.log('LOG: ZIP file');
+  } else if (url.endsWith('xpi')) {
+    console.log('LOG: XPI file');
   }
+
+  let addonFilePath = path.join(tempPath, `${hash}${extension}`);
+  let addonPath = path.join(tempPath, hash);
 
   if (!fs.existsSync(addonFilePath)) {
     console.log('LOG: Downloading addon');
@@ -40,7 +48,10 @@ export const downloadAddon = async (url) => {
     fs.writeFileSync(addonFilePath, buffer);
   }
 
-  if (!fs.existsSync(addonPath) && url.endsWith('zip')) {
+  if (
+    !fs.existsSync(addonPath) &&
+    (url.endsWith('zip') || url.endsWith('xpi'))
+  ) {
     console.log('LOG: Unpacking addon');
     await decompress(addonFilePath, addonPath);
   }
@@ -58,4 +69,26 @@ export const createFileList = (folderPath) => {
     }
   }
   return paths;
+};
+
+export const createFolders = (directories) => {
+  directories.forEach((dir) => {
+    if (!shell.test('-d', dir)) {
+      shell.mkdir('-p', dir);
+      console.log(`INFO: Directory '${dir}' - is created.`);
+    } else {
+      console.log(`INFO: Directory '${dir}' - already exists.`);
+    }
+  });
+};
+
+export const deleteFolders = (directories) => {
+  directories.forEach((dir) => {
+    if (shell.test('-d', dir)) {
+      shell.rm('-rf', dir);
+      console.log(`INFO: Directory '${dir}' - is deleted.`);
+    } else {
+      console.log(`INFO: Directory '${dir}' - does not exist.`);
+    }
+  });
 };

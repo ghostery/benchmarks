@@ -7,9 +7,9 @@ output/current/idleWithBrowser/**
 output/current/withGhostery/**
 output/current/withoutGhostery/**
 output/time/withGhostery/**
-output/time/withoutGhostery/**
+output/time/withoutExtensions/**
+output/time/withUBlockOrigin/**
 profiles/withGhostery/**
-profiles/withoutGhostery/**
+profiles/withoutExtensions/**
+profiles/withUBlockOrigin/**
 
-# Do not ignore a special file name
-!.gitkeep

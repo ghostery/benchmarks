@@ -11,8 +11,10 @@
     "lint": "eslint *.js"
   },
   "dependencies": {
+    "chromedriver": "^123.0.1",
     "decompress": "^4.2.1",
-    "selenium-webdriver": "^4.7.1"
+    "selenium-webdriver": "^4.7.1",
+    "shelljs": "^0.8.5"
   },
   "devDependencies": {
     "eslint": "^8.33.0",
